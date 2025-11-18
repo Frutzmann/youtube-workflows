@@ -1,0 +1,522 @@
+{
+  "name": "(YOUTUBE) - Note taker - GitHub to Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "combineMapPrompt": "Write a concise summary of approximatively 50 words in ** idiomatic French**:\n\n\n\"{text}\"\n\n\nCONCISE SUMMARY:",
+              "prompt": "Write a concise summary of the following **in FRENCH** between 20 and 70 words MAXIMUM:\n\n\n\"{text}\"\n\nONLY WRITE THE SUMMARY. \n\nADJECTIVE ORIENTED. Ex: \"Cette refonte apporte des modifications\" => \"Refonte pour apporter des modifications\"\n\nNO BULLET POINTS\n\nNO \"Résumé\"\n\nCONCISE SUMMARY:"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "typeVersion": 2.1,
+      "position": [
+        944,
+        -704
+      ],
+      "id": "bc5534fb-b220-43c6-820f-4e7b664255ec",
+      "name": "Summarization Chain"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        -464
+      ],
+      "id": "3afadb9d-7d6d-46ba-9679-ef03a8f2d867",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "gweReDhvUtbQBojU",
+          "name": "DEL - OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        720,
+        -704
+      ],
+      "id": "13f6b024-b39b-44a7-86d0-7a4af705277e",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/OWNER/REPO/commits",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR-TOKEN>"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -176,
+        -848
+      ],
+      "id": "2ffdae61-97ca-4394-8427-baddc4d78557",
+      "name": "Get commits of the day",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5cc3d5b-c31e-4375-a5d2-179e840e772e",
+              "name": "text",
+              "value": "={{ $json.commit.message }}",
+              "type": "string"
+            },
+            {
+              "id": "2eb268f0-3bba-431c-8484-02282ce9520f",
+              "name": "time",
+              "value": "={{ $json.commit.author.date.toDateTime().format('HH:00') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        48,
+        -848
+      ],
+      "id": "bb4bc2ad-e153-4703-b907-fae76d03a696",
+      "name": "Get the commit messages"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const text = $json.text\nconst time = $json.time\n\nif (text.toLocaleLowerCase().trim() === 'start') {\n  return {\n    startTime: time,\n  }\n}\n\nif (text.toLocaleLowerCase().trim() === 'end') {\n  return {\n    endTime: time\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -992
+      ],
+      "id": "9e129dcf-cb80-44d9-a6aa-3f4ecc2eb8d0",
+      "name": "Extract Start Time and EndTime"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -992
+      ],
+      "id": "72e9f879-cd40-408b-a2bf-9eb4288ef525",
+      "name": "Aggregate Start and End Time"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d7555807-5df8-409e-a8f3-cd2860ea9d6b",
+              "leftValue": "={{ $json.text.toLowerCase() }}",
+              "rightValue": "start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "d3dadcc5-a7f5-4468-adf8-5256905e2c0a",
+              "leftValue": "={{ $json.text.toLowerCase() }}",
+              "rightValue": "end",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        -848
+      ],
+      "id": "737f4bf9-bf13-49b1-9325-68978e098f1a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7aab0373-b847-4237-8e11-e909843df41f",
+              "name": "summary",
+              "value": "={{ $json.output.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        -704
+      ],
+      "id": "5112074e-2166-4347-9784-446f6b491d17",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const start = $('Aggregate Start and End Time').first().json.data[1].startTime;\nconst end = $('Aggregate Start and End Time').first().json.data[0].endTime;\n\nconst [startH, startM] = start.split(':').map(Number);\nconst [endH, endM] = end.split(':').map(Number);\n\nconst totalMinutes = (endH * 60 + endM) - (startH * 60 + startM);\nconst hours = Math.floor(totalMinutes / 60);\nconst minutes = totalMinutes % 60;\n\nconst difference = `${String(hours)}:${String(minutes).padStart(2, '0')}`;\n\nreturn {\n  difference,\n  startAt: start,\n  endAt: end,\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -992
+      ],
+      "id": "cfbc68a2-f410-4097-93f8-27f321ec86cc",
+      "name": "Get Start, End, Total",
+      "executeOnce": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1520,
+        -848
+      ],
+      "id": "fe9ce01b-8862-45ae-b1ef-3e587a56d87c",
+      "name": "Merge",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        -848
+      ],
+      "id": "da01e596-4635-4464-9f23-c2dd627e6a06",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7456f6f8-f5fe-497a-9319-31fa03f819f7",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        496,
+        -704
+      ],
+      "id": "72e09d65-eb88-4ce2-928b-840999418e72",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 23,
+              "triggerAtMinute": 50
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        -848
+      ],
+      "id": "e48fae9f-1bb3-46f6-812d-ece723d4d6ed",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1952,
+        -848
+      ],
+      "id": "cbb0d2a9-ccbf-40e2-a336-10c1435f1870",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kLKmTpVsD5EXQZGh",
+          "name": "DEL - Google Sheets"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get commits of the day": {
+      "main": [
+        [
+          {
+            "node": "Get the commit messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the commit messages": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Start Time and EndTime": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Start and End Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Start and End Time": {
+      "main": [
+        [
+          {
+            "node": "Get Start, End, Total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract Start Time and EndTime",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get Start, End, Total": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get commits of the day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2f0be3e6-1550-4336-a4de-e7c36d0dd5c6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "65a80edec3c2f189f1ba8da4bc02879e832291c03bf833d4cbd1bff8ea19a66b"
+  },
+  "id": "MTmseH8hZPKK3NB9",
+  "tags": []
+}
