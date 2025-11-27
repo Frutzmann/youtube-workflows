@@ -1,0 +1,621 @@
+{
+  "name": "Reddit Insights Finder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "9bca81e0-2403-4c49-938c-fbff8b439f62",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -2320,
+        176
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"subreddits\": [\n    \"r/entrepreneur\",\n    \"r/startups\",\n    \"r/SaaS\",\n    \"r/marketing\",\n    \"r/ecommerce\"\n  ],\n  \"reasoning\": \"Selected based on target audience and problem alignment\"\n}"
+      },
+      "id": "6e2ce3b8-bc73-4412-b892-6ab36644f633",
+      "name": "Subreddit Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -1728,
+        400
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[ {\n      \"type\": \"direct_service_request\",\n      \"query\": \"(subreddit:entrepreneur OR subreddit:startups) (\\\"looking for\\\" OR \\\"need to hire\\\") (\\\"SEO expert\\\" OR \\\"digital marketing\\\") -(\\\"I offer\\\" OR \\\"my service\\\")\",\n      \"intent_level\": \"high\"\n    },\n    {\n      \"type\": \"problem_focused\",\n      \"query\": \"(subreddit:marketing OR subreddit:SaaS) (\\\"struggling with\\\" OR \\\"problem with\\\") (\\\"conversion rate\\\" OR \\\"email marketing\\\") AND (\\\"help\\\" OR \\\"advice\\\")\",\n      \"intent_level\": \"medium-high\"\n    },\n    {\n      \"type\": \"recommendation_request\",\n      \"query\": \"(subreddit:ecommerce OR subreddit:entrepreneur) (\\\"recommend\\\" OR \\\"suggestions\\\") (\\\"marketing agency\\\" OR \\\"SEO tools\\\") -(\\\"free\\\" OR \\\"DIY\\\")\",\n      \"intent_level\": \"medium\"\n    }\n  \n]"
+      },
+      "id": "8af14738-c391-45a5-9679-040ae5b52951",
+      "name": "Multi-Query Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -1376,
+        400
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"lead_score\": 8,\n  \"urgency_level\": \"high\",\n  \"business_context\": \"SaaS startup with scaling challenges\",\n  \"specific_problem\": \"Conversion rate dropping after recent website changes\",\n  \"recommended_service\": \"Comprehensive conversion rate audit and optimization strategy\",\n  \"outreach_approach\": \"Offer free 15-minute conversion analysis to demonstrate expertise\",\n  \"estimated_value\": \"$3000-5000\",\n  \"response_priority\": \"immediate\"\n}"
+      },
+      "id": "cdd5522c-ed2b-45c3-aa27-0bdc9319d426",
+      "name": "Service Analysis Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        -224,
+        368
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 1,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "high-value-filter",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "leftValue": "={{ $json.output.lead_score }}",
+              "rightValue": 6
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5a0ba6d7-f4e9-4d7c-97c9-32d9bcdba5b9",
+      "name": "High Value Filter",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        -16,
+        128
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.3,
+          "topP": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1872,
+        400
+      ],
+      "id": "1525acc1-ac94-4141-9a30-7a375c8eebc8",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "Ajg3XUFKTa19PqTM",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.3,
+          "topP": 0.8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        400
+      ],
+      "id": "6ac77c9d-08a1-4cf5-8ef3-6ddbff3e9c0c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "Ajg3XUFKTa19PqTM",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        176
+      ],
+      "id": "98429dcb-42a7-44ee-965d-5b67084eb46e",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        368
+      ],
+      "id": "287caa86-d00f-4fce-9ca2-b4a54a1d6f93",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "Ajg3XUFKTa19PqTM",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"profession\": \"Automation Consultant / n8n Workflow Specialist\",\n  \"industry\": \"E-commerce & Retail\",\n  \"primary_services\": \"n8n workflow automation, AI integration, business process optimization, inventory management automation, customer journey automation\",\n  \"service_keywords\": \"n8n, workflow automation, e-commerce automation, AI integration, inventory automation, order processing, customer onboarding, administrative task automation, cost reduction, time savings\",\n  \"target_client_profile\": \"French SME e-commerce businesses with 100k-1M€ annual revenue, 5-50 employees, growth-focused, struggling with manual processes, seeking operational efficiency\",\n  \"pain_points\": \"Manual inventory management, repetitive administrative tasks, slow customer onboarding processes, lack of integration between tools, high operational costs, time wasted on non-core activities, difficulty scaling operations, data silos between platforms\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2096,
+        176
+      ],
+      "id": "f4b48c3b-2532-4067-bcf4-2a14c8b8c6a4",
+      "name": "Get Enhanced Business Profile"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        368
+      ],
+      "id": "27e74b52-6301-480a-9659-feef44f6c21b",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "Ajg3XUFKTa19PqTM",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apppuAONiQTvF6Wjx",
+          "mode": "list",
+          "cachedResultName": "Youtube",
+          "cachedResultUrl": "https://airtable.com/apppuAONiQTvF6Wjx"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbltKY5jVkgRCouBk",
+          "mode": "list",
+          "cachedResultName": "Imported table",
+          "cachedResultUrl": "https://airtable.com/apppuAONiQTvF6Wjx/tbltKY5jVkgRCouBk"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead Score": "={{ $json.output.lead_score }}",
+            "Context": "={{ $json.output.business_context }}",
+            "Problem": "={{ $json.output.specific_problem }}",
+            "Recommended Service": "={{ $json.output.recommended_service }}",
+            "Approach": "={{ $json.output.outreach_approach }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Context",
+              "displayName": "Context",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Problem",
+              "displayName": "Problem",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Recommended Service",
+              "displayName": "Recommended Service",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Approach",
+              "displayName": "Approach",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        128
+      ],
+      "id": "e4ce2817-a49b-4496-8a10-b78aa33b009a",
+      "name": "Save High Value Leads",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "UB9UH3QdfkJNKYgJ",
+          "name": "Airtable Admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Reddit lead generation strategist. Analyze the business profile and identify the 5 most relevant subreddits for lead generation.\n\n**Business Profile:**\n- Profession: {{ $json.profession }}\n- Industry: {{ $json.industry }}\n- Primary Services: {{ $json.primary_services }}\n- Service Keywords: {{ $json.service_keywords }}\n- Target Client: {{ $json['target_client_profile'] }}\n- Pain Points: {{ $json.pain_points }}\n\n**Selection Criteria:**\n1. **High Intent Communities**: Subreddits where your target clients actively seek solutions\n2. **Problem-Focused**: Communities discussing specific pain points you solve\n3. **Business Context**: Professional subreddits with decision-makers\n4. **Active Engagement**: 10K+ members with recent quality discussions\n5. **Lead-Friendly**: Communities that welcome helpful solutions (not purely promotional)\n\n**Avoid:**\n- Pure promotional subreddits\n- Overly broad communities (r/AskReddit)\n- Student/hobbyist focused groups\n- Dead or low-engagement communities\n\nReturn the 5 most strategic subreddits that balance relevance, engagement, and lead potential. Include reasoning for your selections.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "063ec286-c2ac-4347-8e89-e51277192811",
+      "name": "Selection des Subreddits",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -1872,
+        176
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a Reddit search expert specializing in B2B lead identification.\n\nCreate 3 focused search queries targeting different intent types:\n\n**Business Context:**\n- Profession:{{ $('Get Enhanced Business Profile').item.json.profession }}\n- Primary Services: {{ $('Get Enhanced Business Profile').item.json.primary_services }}\n- Service Keywords: {{ $('Get Enhanced Business Profile').item.json.service_keywords }}\n- Target Client: {{ $('Get Enhanced Business Profile').item.json.target_client_profile }}\n- Pain Points: {{ $('Get Enhanced Business Profile').item.json.pain_points }}\n\n**Target Subreddits:** {{ $json.output.subreddits }}\n\n**Query Types to Create:**\n\n1. **Direct Service Requests** (High Intent)\n   - People explicitly asking for your type of service as a {{ $('Get Enhanced Business Profile').item.json.profession }}\n   - Format: (subreddit:X OR subreddit:Y) (\"looking for\" OR \"need\" OR \"hire\") (\"service_keyword1\" OR \"service_keyword2\") -(\"I offer\" OR \"my service\")\n\n2. **Problem-Focused** (Medium-High Intent)  \n   - People describing problems you solve as a {{ $('Get Enhanced Business Profile').item.json.profession }}\n   - Format: (subreddit:X OR subreddit:Y) (\"struggling with\" OR \"problem with\") (\"pain_point1\" OR \"pain_point2\") AND (\"help\" OR \"advice\" OR \"solution\")\n\n3. **Recommendation Requests** (Medium Intent)\n   - People asking for tool/service recommendations that a {{ $('Get Enhanced Business Profile').item.json.profession }} can help\n   - Format: (subreddit:X OR subreddit:Y) (\"recommend\" OR \"suggestions\") (\"service_area\") -(\"free\" OR \"DIY\")\n\n**Query Rules:**\n- Keep each query under 200 characters\n- Use exact pain point language from target audience\n- Include 3-5 service keywords per query\n- Exclude competitor promotional content\n- Focus on business decision-maker language\n\nOutput 3 separate optimized queries with their intent levels. ",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "77cc7c66-8d6e-44d0-a8cb-d28c136108ed",
+      "name": "Créer des Query Subreddit",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -1520,
+        176
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "inputText": "=**Service Profile:**\n<profession>{{ $('Get Enhanced Business Profile').item.json.profession }}</profession>\n<primary_services>{{ $('Get Enhanced Business Profile').item.json.primary_services }}</primary_services>\n<target_client>{{ $('Get Enhanced Business Profile').item.json.target_client_profile }}</target_client>\n\n<pain_points>{{ $('Get Enhanced Business Profile').item.json.pain_points }}</pain_points>\n\n**Post Content:**\n<title>{{ $json.title || 'N/A' }}</title>\n<content>{{ $json.selftext || $json.text || $json.content || $json.body || 'No content' }}</content>\n<subreddit>{{ $json.subreddit_name_prefixed }}</subreddit>\n<author>{{ $json.author || 'unknown' }}</author>\n<engagement>{{ $json.score || 0 }} upvotes, {{ $json.num_comments || 0 }} comments</engagement>\n<post_age>{{ $json.created || 'unknown' }}</post_age>",
+        "categories": {
+          "categories": [
+            {
+              "category": "HIGH_POTENTIAL",
+              "description": "=Posts that clearly describe business problems, pain points, or requests for help that directly align with the service profile. The author appears to be from the target audience and is actively seeking solutions. These represent high-value lead opportunities with strong conversion potentialfor  for a {{ $('Get Enhanced Business Profile').item.json.profession }}"
+            },
+            {
+              "category": "MEDIUM_POTENTIAL",
+              "description": "=Posts that mention relevant challenges or needs but may be less specific or from audience segments that are somewhat aligned. These could be developed into leads with the right approach but require more nurturing."
+            },
+            {
+              "category": "LOW_POTENTIAL",
+              "description": "Posts that have minimal relevance to the services offered or come from audiences outside the target demographic. These are unlikely to convert but might provide industry insights."
+            },
+            {
+              "category": "NO_POTENTIAL",
+              "description": "Posts that are clearly promotional, self-serving, or completely irrelevant to the service profile. These should be ignored as they offer no business value and may harm reputation if engaged with."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "29978be0-2566-41c3-9186-9ce89d290442",
+      "name": "Classification des leads",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "position": [
+        -720,
+        144
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a business development strategist analyzing Reddit posts for service opportunities.\n\n**Professional Context:**\n- Profession: {{ $('Get Enhanced Business Profile').item.json.profession }}\n- Primary Services: {{ $('Get Enhanced Business Profile').item.json.primary_services }}\n- Target Clients: {{ $('Get Enhanced Business Profile').item.json.target_client_profile }}\n- Service Keywords: {{ $('Get Enhanced Business Profile').item.json.service_keywords }}\n\n**Reddit Post Analysis:**\nTitle: {{ $json.title }}\nContent: {{ $json.selftext }}\nSubreddit: {{ $json.subreddit_name_prefixed }}\nEngagement: {{ $json.score }} upvotes, {{ $json.num_comments }} comments\nClassification: {{ $json.category }}\n\n**Analysis Framework:**\n1. **Problem Identification**: What specific business problem is expressed?\n2. **Service Mapping**: Which of your services directly addresses this problem?\n3. **Value Assessment**: What measurable outcome could you deliver?\n4. **Urgency Assessment**: How time-sensitive is their need?\n5. **Business Context**: Are they the right size/type of client?\n6. **Competition Analysis**: How many others are likely targeting this lead?\n\n**Scoring Criteria:**\n- Lead Score (1-10): Overall conversion probability\n- Urgency Level: immediate/high/medium/low\n- Estimated Value: Based on problem scope and your pricing\n- Response Priority: immediate/today/this_week/monitor\n\n**Output Requirements:**\nProvide a comprehensive lead analysis including specific service recommendations, outreach strategy, and business justification. Focus on actionable insights for immediate lead engagement.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "50f6fa15-806a-48f2-978f-c65d442a1ec3",
+      "name": "Analyse d'opportunités",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -368,
+        128
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "location": "allReddit",
+        "keyword": "={{ $json.query }}",
+        "limit": 10,
+        "additionalFields": {
+          "sort": "new"
+        }
+      },
+      "id": "6fff82ae-2448-4fe2-b87f-0717acbe86e9",
+      "name": "Reddit Search Engine",
+      "type": "n8n-nodes-base.reddit",
+      "position": [
+        -944,
+        176
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "lE45Iwn9VBeW2ouK",
+          "name": "Reddit FU"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Enhanced Business Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Value Filter": {
+      "main": [
+        [
+          {
+            "node": "Save High Value Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Service Analysis Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Analyse d'opportunités",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subreddit Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Selection des Subreddits",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Multi-Query Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Créer des Query Subreddit",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Selection des Subreddits",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Créer des Query Subreddit",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Reddit Search Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classification des leads",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Enhanced Business Profile": {
+      "main": [
+        [
+          {
+            "node": "Selection des Subreddits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyse d'opportunités",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selection des Subreddits": {
+      "main": [
+        [
+          {
+            "node": "Créer des Query Subreddit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Créer des Query Subreddit": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classification des leads": {
+      "main": [
+        [
+          {
+            "node": "Analyse d'opportunités",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyse d'opportunités": {
+      "main": [
+        [
+          {
+            "node": "High Value Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit Search Engine": {
+      "main": [
+        [
+          {
+            "node": "Classification des leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b8ed3652-eec1-42cc-b8c9-c3ff68e4e57f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "65a80edec3c2f189f1ba8da4bc02879e832291c03bf833d4cbd1bff8ea19a66b"
+  },
+  "id": "uBgwBaRc6unwxRRR",
+  "tags": []
+}

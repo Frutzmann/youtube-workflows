@@ -1,4 +1,5 @@
 #Installation
+
 1. Créée un nouveau workflow sur n8n
 2. En haut à droite, clique sur "..." puis "import from file"
 3. Sélectionne le workflow à la racine de ce dossier. 
